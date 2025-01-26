@@ -12,9 +12,19 @@ $ exit
 
 commandes pour le scraping d'eureka : 
 
-scrapy startproject eureka_catalogue
-scrapy genspider eureka eureka.valdemarne.fr
-crapy crawl eureka -o books.json
+$ scrapy startproject eureka_catalogue
+$ scrapy genspider eureka eureka.valdemarne.fr
+$ scrapy crawl eureka -o books.json
+
+
+commandes pour le scraping du site "le petit bouquiniste"
+$ scrapy startproject petitbouquiniste
+$ cd petitbouquiniste
+$ scrapy genspider petitbouquiniste lepetitbouquiniste.fr
+$ scrapy crawl petitbouquiniste -o books.json
+
+
+scrapy runspider bouquiniste.py -o output.json
 
 
 
