@@ -24,7 +24,6 @@ $ scrapy genspider petitbouquiniste lepetitbouquiniste.fr
 $ scrapy crawl petitbouquiniste -o books.json
 
 
-scrapy runspider bouquiniste.py -o output.json
 
 
 
