@@ -19,7 +19,7 @@ class BouquinisteSpider(scrapy.Spider):
 
     def __init__(self):
         url = 'https://lepetitbouquiniste.fr/boutique/?product-page='
-        for page in range(1,177): # 176 pages
+        for page in range(1,3): # 176 pages
             self.start_urls.append(url + str(page))
 
 
@@ -46,23 +46,15 @@ class BouquinisteSpider(scrapy.Spider):
         # Dictionnaire pour stocker les données extraites
         data = {}
 
-        # # Extraire les informations du livre
-        # desc = soup.find('h1')
-        # if desc:
-        #     data['desc'] = desc.get_text(strip=True)
-
         # Extraire les informations du livre
         desc = soup.find('h1')
         if desc:
             raw_desc = desc.get_text(strip=True)
             data['desc'] = raw_desc  # Garder le champ brut si besoin
-            print(raw_desc)
 
         # Appeler la fonction parse_desc pour séparer les données
         parsed_desc = self.parse_desc(raw_desc)
         data.update(parsed_desc)  # Ajouter titre, auteur, éditeur, format, année au dictionnaire
-
-
 
 
         # Extraire le prix
@@ -111,14 +103,13 @@ class BouquinisteSpider(scrapy.Spider):
 
 
     # Fonction pour extraire le titre, l'auteur, l'éditeur, le format, et l'année à partir du champ desc.
-    # Structure : "Titre – Auteur / Editeur / Format / Année"
+    # Structures trouvées : 
+    #        "Titre – Auteur / Editeur / Format / Année"
+    #        ""
     def parse_desc(self, desc):
         print("IN PARSE_DESC")
 
-        # Nettoyer les espaces superflus
-        desc = desc.strip()
-
-        # Initialiser les données
+        # Initialisation des champs
         parsed_data = {
             "titre": None,
             "auteur": None,
@@ -127,41 +118,43 @@ class BouquinisteSpider(scrapy.Spider):
             "annee": None
         }
 
+        # Nettoyage de base
+        desc = desc.strip()
 
-        # Exemple de pattern principal avec "–" et "/"
-        if "–" in desc and "/" in desc:
-            parts = [part.strip() for part in desc.split('/')]
-            
-            # Titre et auteur séparés par "–"
-            titre_auteur = parts[0].split('–')
-            if len(titre_auteur) == 2:
+
+        # 1. Extraire titre et auteur (séparés par "–")
+        if "–" in desc:
+            titre_auteur = desc.split("–")
+            if len(titre_auteur) > 1:
                 parsed_data["titre"] = titre_auteur[0].strip()
                 parsed_data["auteur"] = titre_auteur[1].strip()
 
-            # Identifier l'éditeur (commence souvent par "Ed :")
-            # parsed_data["editeur"] = next((p.replace('Ed :', '').strip() for p in parts if p.startswith('Ed :')), None)
-            parsed_data["editeur"] = next((p.replace('Ed :', '').strip() for p in parts), None)
+        # 2. Extraire l'éditeur (Ed : ou Editions :)
+        match_editeur = re.search(r'(Ed\s?:|Editions\s?:)\s?([^/]+)', desc)
+        if match_editeur:
+            parsed_data["editeur"] = match_editeur.group(2).strip()
 
-            # Identifier le format (contient souvent "Pocket" ou "n°")
-            # parsed_data["format"] = next((p.strip() for p in parts if 'Pocket' in p or 'n°' in p), None)
-            parsed_data["format"] = next((p.strip() for p in parts), None)
+        # 3. Extraire le format (mention de "Format")
+        match_format = re.search(r'(Format\s?:?\s?[^/]+)', desc, re.IGNORECASE)
+        if match_format:
+            parsed_data["format"] = match_format.group(1).strip()
 
-            # Identifier l'année (4 chiffres)
-            # parsed_data["annee"] = next((p.strip() for p in parts if p.strip().isdigit() and len(p.strip()) == 4), None)
-            parsed_data["annee"] = next((p.strip() for p in parts), None)
-
-        # Exemple de fallback pour un format différent
-        elif "–" in desc:
-            titre_auteur = desc.split('–')
-            parsed_data["titre"] = titre_auteur[0].strip()
-            parsed_data["auteur"] = titre_auteur[1].strip() if len(titre_auteur) > 1 else None
-
-        # Vérifier si l'année est à la fin de la chaîne
-        match_annee = re.search(r'\b(\d{4})\b$', desc)
+        # 4. Extraire l'année (4 chiffres)
+        match_annee = re.search(r'\b(19|20)\d{2}\b', desc)
         if match_annee:
-            parsed_data["annee"] = match_annee.group(1)
+            parsed_data["annee"] = match_annee.group(0)
+
+        # 5. Gestion des cas particuliers
+        # Si le titre ou l'auteur n'ont pas été correctement identifiés, utiliser le début de `desc`
+        if not parsed_data["titre"] and not parsed_data["auteur"]:
+            parts = desc.split("/")
+            if parts:
+                parsed_data["titre"] = parts[0].strip()
 
         return parsed_data
+
+
+       
 
 
 

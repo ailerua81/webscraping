@@ -26,4 +26,12 @@ $ scrapy crawl petitbouquiniste -o books.json
 
 
 
+commandes pour le scraping du site "la bourse aux livres"
+$ scrapy startproject labourseauxlivres
+$ cd labourseauxlivres
+$ scrapy genspider bourseauxlivres shop.labourseauxlivres.fr
+$ scrapy crawl bourseauxlivres -o books.json
+
+
+
 
