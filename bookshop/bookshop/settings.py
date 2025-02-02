@@ -7,6 +7,8 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
+import os
+
 BOT_NAME = "bookshop"
 
 SPIDER_MODULES = ["bookshop.spiders"]
@@ -68,9 +70,9 @@ ROBOTSTXT_OBEY = True
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    "bookshop.pipelines.BookshopPipeline": 300,
-#}
+ITEM_PIPELINES = {
+   "bookshop.pipelines.BookshopPipeline": 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
@@ -96,3 +98,18 @@ ROBOTSTXT_OBEY = True
 # Set settings whose default value is deprecated to a future-proof value
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
+
+
+REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
+
+# MONGO DB SETTINGS
+# MONGO_HOST = os.environ.get("MONGO_HOST")
+# MONGO_PORT = int(os.environ.get("MONGO_PORT"))
+# MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME")
+# MONGO_COLLECTION_NAME = os.environ.get("MONGO_COLLECTION_NAME")
+
+# MONGO_URI = "mongodb://172.24.80.1:27017/"
+MONGO_URI = "mongodb://localhost:27017/"
+MONGO_DATABASE = "projetDE"
+MONGO_COLLECTION = "books"
+

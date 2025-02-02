@@ -8,15 +8,15 @@ import scrapy
 
 class BookshopItem(scrapy.Item):
     
-    title = scrapy.Field()  # Titre
-    autor = scrapy.Field()  # Auteur
-    editor = scrapy.Field()  # Editeur
-    edition_date = scrapy.Field()  # Date d'édition
-    price = scrapy.Field()  # Prix 
-    image = scrapy.Field()  # Lien vers l'image
+    titre = scrapy.Field()  # Titre
+    auteur = scrapy.Field()  # Auteur
+    editeur = scrapy.Field()  # Editeur
+    date_edition = scrapy.Field()  # Date d'édition
+    prix = scrapy.Field()  # Prix 
+    photo = scrapy.Field()  # Lien vers la photo de la couverture du livre
     categories = scrapy.Field()  # Liste des catégories (ex. : Livre rare, Poésie)
-    state = scrapy.Field()  # État du livre
-    summary = scrapy.Field()  # Résumé
+    etat = scrapy.Field()  # État du livre
+    resume = scrapy.Field()  # Résumé
     
     
     

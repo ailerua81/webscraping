@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 scrapy = "==2.11.2"
+pymongo = "==4.9.1"
 
 [dev-packages]
 

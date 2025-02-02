@@ -26,10 +26,9 @@ class BookshopSpider(scrapy.Spider):
 
 
     def parse(self, response):
-        print("in parse")
         
         # Récupérer le contenu HTML brut de la page du produit
-        html_content = response.text  # Utiliser .text pour obtenir le contenu HTML complet
+        html_content = response.text 
 
         # Utiliser BeautifulSoup pour analyser le contenu HTML
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -39,62 +38,57 @@ class BookshopSpider(scrapy.Spider):
 
         # Extraire les informations pour chaque livre
         for livre in livres:
-            href = livre.find('a')['href']  # Récupérer le href
-            # title = livre.find('a')['title']  # Récupérer le title
-            # ref = livre.find('div', class_='livre-ref').get_text(strip=True)  # Récupérer la référence
-            # nombre = livre.find('div', class_='livre-nombre-txt').get_text(strip=True)  # Récupérer le nombre
+            href = livre.find('a')['href'] 
             livre_url = self.url_base + href
             if livre_url:
                 # Faire une requête vers la page du produit
                 yield Request(livre_url, callback=self.parse_item)  
 
 
-    def parse_item(self, response):
-         # Récupérer le contenu HTML brut de la page du produit
-        item_content = response.text  # Utiliser .text pour obtenir le contenu HTML complet
-
-        # Utiliser BeautifulSoup pour analyser le contenu HTML
+    def parse_item(self, response): 
+        item_content = response.text 
         item_soup = BeautifulSoup(item_content, 'html.parser')   
 
         # Dictionnaire pour stocker les données extraites
         data = {}  
 
         # Extraire les informations du livre
+
         # Titre
-        title = item_soup.find('div', class_='titreLivre-detail') 
-        if title:
-            data['title'] = title.get_text(strip=True) 
+        titre = item_soup.find('div', class_='titreLivre-detail') 
+        if titre:
+            data['titre'] = titre.get_text(strip=True) 
 
         # Auteur
-        author = item_soup.find('div', class_='auteur')
-        if author:
-            data['author'] = author.get_text(strip=True)
+        auteur = item_soup.find('div', class_='auteur')
+        if auteur:
+            data['auteur'] = auteur.get_text(strip=True)
         else:
-            data['author'] =  None
+            data['auteur'] =  None
 
 
-        # Editor
-        editor =  item_soup.find('div', class_='editeur')
-        if editor:
-            data['editor'] = editor.get_text(strip=True)        
+        # Editeur
+        editeur =  item_soup.find('div', class_='editeur')
+        if editeur:
+            data['editeur'] = editeur.get_text(strip=True)        
         else:
-            data['editor'] =  None
+            data['editeur'] =  None
 
 
-        # Edition date
-        editon_date =  item_soup.find('div', class_='date-edition')
-        if editon_date:
-            data['editon_date'] = editon_date.get_text(strip=True)        
+        # Date d'édition
+        date_edition =  item_soup.find('div', class_='date-edition')
+        if date_edition:
+            data['date_edition'] = date_edition.get_text(strip=True)        
         else:
-            data['editon_date'] =  None 
+            data['date_edition'] =  None 
 
 
         # Prix du livre
-        price =  item_soup.find('span', class_='prix')
-        if price:
-            data['price'] = price.get_text(strip=True)        
+        prix =  item_soup.find('span', class_='prix')
+        if prix:
+            data['prix'] = prix.get_text(strip=True)        
         else:
-            data['price'] =  None  
+            data['prix'] =  None  
 
 
         # Photo du livre
@@ -105,12 +99,12 @@ class BookshopSpider(scrapy.Spider):
             if match:
                 image_url = match.group(1)
                 if image_url:
-                    data['image'] = self.url_base + image_url
+                    data['photo'] = self.url_base + image_url
                 else:
-                    data['image'] = None 
+                    data['photo'] = None 
 
 
-        # Genre
+        # Catégories (liste)
         genres = []
         for genre_div in item_soup.find_all('div', class_='genre'):
             # Extraire le texte de chaque <a> dans ce div
@@ -122,24 +116,20 @@ class BookshopSpider(scrapy.Spider):
 
 
         
-        # Etat et 4eme de couverture du livre
+        # Etat et 4eme de couverture du livre (résumé)
         for details in item_soup.find_all('div', class_='width100'):
             if details:
                 value = details.get_text(strip=True)
                 
-                # Utiliser des regex pour extraire les informations
                 etat_match = re.search(r"État:(.*?)(?=4ème de couverture|ISBN|$)", value, re.DOTALL)
                 couverture_match = re.search(r"4ème de couverture:(.*?)(?=ISBN|Vous voulez plus d'information|$)", value, re.DOTALL)
 
-                # Stocker les résultats dans des variables
                 etat_livre = etat_match.group(1).strip() if etat_match else "Non disponible"
                 quatrieme_couverture = couverture_match.group(1).strip() if couverture_match else "Non disponible"
 
-                data['state'] = etat_livre
-                data['summary'] = quatrieme_couverture
-
-       
-            
+                data['etat'] = etat_livre
+                data['resume'] = quatrieme_couverture
+ 
 
         # Retourner les données
         yield data              
