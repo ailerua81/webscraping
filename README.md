@@ -45,6 +45,18 @@ Pour vérifier les données de la base (MongoDb shell)
 ```
 db.books.find().pretty()
 ```
+## Lancer le dashboard 
 
+- cloner le repository github
+  ```
+  git clone https://github.com/ailerua81/webscraping webscraping
+  ```
 
+- Avoir Docker et Docker compose sur sa machine
+- Construire les conteneurs à l'aide de la commande (cela peut prendre un peu de temps) :
+```
+docker-compose build
+docker-compose up -d
+```
+- aller sur le localhost dans un navigateur de recherche : http://localhost:5000
 
