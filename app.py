@@ -5,22 +5,102 @@ import pandas as pd
 import pymongo
 import plotly.express as px
 from elasticsearch import Elasticsearch
+import os
+import subprocess
+import logging
+import time
 
-# Connexion à MongoDB
-mongo_client = pymongo.MongoClient("mongodb://localhost:27017")
-db = mongo_client["projetDE"]
+# Configuration MongoDB et Elasticsearch
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongodb_projetDE:27017/projetDE")
+ES_HOST = os.getenv("ELASTICSEARCH_HOST", "http://elasticsearch:9200")
+
+
+# Vérification de MongoDB
+def wait_for_mongo():
+    print("Vérification de la connexion à MongoDB...")
+    for _ in range(10):  # Essaye pendant 10 secondes
+        try:
+            client = pymongo.MongoClient(MONGO_URI, serverSelectionTimeoutMS=2000)
+            client.admin.command("ping")
+            print("MongoDB est accessible !")
+            return True
+        except Exception as e:
+            print(f"MongoDB pas encore prêt : {e}")
+            time.sleep(2)
+    return False
+
+# Vérification d'Elasticsearch
+def wait_for_elasticsearch():
+    print("Vérification de la connexion à Elasticsearch...")
+    es = Elasticsearch(ES_HOST)
+    for _ in range(10):
+        if es.ping():
+            print("Elasticsearch est accessible !")
+            return True
+        print("Elasticsearch pas encore prêt, attente...")
+        time.sleep(2)
+    return False
+
+# Vérifier MongoDB et Elasticsearch avant de démarrer
+if not wait_for_mongo() or not wait_for_elasticsearch():
+    print("ERREUR : Impossible de se connecter à MongoDB ou Elasticsearch. Vérifiez les services.")
+    exit(1)
+
+
+
+
+# Récupérer la chaîne de connexion depuis les variables d'environnement
+#mongo_uri = os.environ.get('MONGO_URI', 'mongodb://mongodb_projetDE:27017/projetDE')
+
+client = pymongo.MongoClient(MONGO_URI)
+db = client.get_database()  # ou db = client['nom_de_votre_db']
 collection = db["books"]
 
+# Lancer le webscraping avant de démarrer le dashboard
+# print("Lancement du webscraping...")
+# subprocess.run(["python", "./bookshop/bookshop/spiders/bookshop.py"], check=True)
+# print("Webscraping terminé !")
+
 # Connexion à Elasticsearch
-es = Elasticsearch("http://localhost:9200")
+#es_host = os.getenv("ELASTICSEARCH_HOST", "http://elasticsearch:9200")  # Utilise le hostname Docker
+#es = Elasticsearch(es_host)
+
+
+def create_index_if_not_exists():
+    if not es.indices.exists(index="books"):
+        print("Index 'books' non trouvé, création en cours...")
+        es.indices.create(index="books", body={
+            "settings": {
+                "number_of_shards": 1,
+                "number_of_replicas": 1
+            },
+            "mappings": {
+                "properties": {
+                    "titre": { "type": "text" },
+                    "auteur": { "type": "text" },
+                    "editeur": { "type": "text" },
+                    "prix": { "type": "float" }
+                }
+            }
+        })
+        print("Index 'books' créé avec succès !")
+
+# Vérifie et crée l'index avant d'exécuter des recherches
+create_index_if_not_exists()
+
+
 
 # Initialisation de l'application Dash avec Bootstrap
 dash_app = dash.Dash(__name__, external_stylesheets=[dbc.themes.LUX])
 
 # Récupérer les données de MongoDB
 def fetch_data():
-    data = list(collection.find({}, {"_id": 0}))  # Récupère toutes les colonnes
-    df = pd.DataFrame(data)
+    def fetch_data():
+        logging.info("📡 Récupération des données depuis MongoDB...")
+        data = list(collection.find({}, {"_id": 0}))
+        logging.info(f"Données récupérées : {data}")
+
+        df = pd.DataFrame(data)
 
     # Vérifier que la colonne "date_edition" existe
     if "date_edition" not in df.columns:
@@ -29,15 +109,24 @@ def fetch_data():
         df["date_edition"] = df["date_edition"].astype(str)  # Convertir en texte
 
     
-
     # Convertir les listes en chaînes de caractères pour éviter les erreurs dans Dash DataTable
     if "categories" in df.columns:
         df["categories"] = df["categories"].apply(lambda x: ", ".join(x) if isinstance(x, list) else x)
 
-    return df    
+    return df
+
+
 
 # Mise en page du Dashboard
 dash_app.layout = dbc.Container([
+
+    html.H1("📚 Dashboard - Lancer le Web Scraping"),
+    
+    dbc.Button("🔄 Lancer le Web Scraping", id="scrape-button", color="primary", className="mb-3"),
+    
+    html.Div(id="scrape-status", children="Cliquez sur le bouton pour lancer le scraping."),
+
+
     dbc.Row([
         dbc.Col(html.H1("📚 Dashboard - L'occasion de lire", className="text-center my-3"), width=12)
     ]),
@@ -225,5 +314,24 @@ def display_book_image(active_cell, data):
     return data[row]["photo"] if "photo" in data[row] else ""  
 
 
+
+# Callback pour exécuter Scrapy depuis le Dashboard
+@dash_app.callback(
+    Output("scrape-status", "children"),
+    Input("scrape-button", "n_clicks"),
+    prevent_initial_call=True
+)
+def run_scrapy(n):
+    try:
+        result = subprocess.run(["scrapy", "crawl", "bookshop"], cwd="bookshop", capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            return "Scraping terminé avec succès !"
+        else:
+            return f"Erreur lors du scraping : {result.stderr}"
+    
+    except Exception as e:
+        return f"Erreur : {str(e)}"
+
 if __name__ == "__main__":
-    dash_app.run_server(debug=True)
+    dash_app.run_server(debug=True, host="0.0.0.0", port=8050)  

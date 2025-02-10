@@ -1,7 +1,9 @@
 import scrapy
+from scrapy.crawler import CrawlerProcess
 from scrapy import Request
 from bs4 import BeautifulSoup
 import re
+
 
 
 class BookshopSpider(scrapy.Spider):
@@ -133,6 +135,4 @@ class BookshopSpider(scrapy.Spider):
 
         # Retourner les données
         yield data              
-
-
-        
+     

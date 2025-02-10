@@ -25,7 +25,11 @@ Pour désactiver l'environnement virtuel :
 $ exit
 ```
 
+### Installation des packages nécessaires
 
+```
+pip install -r requirements.txt
+```
 
 ### Scraping
 
@@ -59,4 +63,14 @@ docker-compose build
 docker-compose up -d
 ```
 - aller sur le localhost dans un navigateur de recherche : http://localhost:5000
+
+### Lancement de l'application
+
+Construire l’image de l'application.
+
+```
+docker-compose up --build
+```
+
+Vous pourrez ensuite accéder au dashboard Dash via http://localhost:8050.
 

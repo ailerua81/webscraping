@@ -1,17 +1,96 @@
+# services:
+#   mongodb_projetDE:
+#     image: mongo:latest
+#     container_name: mongodb_projetDE
+#     restart: always
+#     ports:
+#       - "27017:27017"
+#     volumes:
+#       - mongodb_data:/data/db
+
+  
+#   elasticsearch:
+#     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.3
+#     container_name: elasticsearch
+#     environment:
+#       - discovery.type=single-node
+#       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+#     ports:
+#       - "9200:9200"
+  
+#   app:
+#     build: .
+#     container_name: dashboard_app
+#     depends_on:
+#       - mongodb_projetDE
+#       - elasticsearch
+#     ports:
+#       - "8050:8050"
+#     environment:
+#       MONGO_URI: "mongodb://mongodb_projetDE:27017/projetDE"
+#       ELASTICSEARCH_HOST: "http://elasticsearch:9200"
+
+
+#   # scrapy:
+#   #   build: ./bookshop
+#   #   container_name: scrapy_spider
+#   #   depends_on:
+#   #     - mongodb_projetDE
+#   #     - elasticsearch
+#   #   command: ["scrapy", "crawl", "bookshop"]
+#   #   volumes:
+#   #     - ./bookshop:/usr/src/app  # Monte le dossier local dans le conteneur      
+
+# volumes:
+#   mongodb_data:
+
+
 services:
-  elastic:
-    image: elasticsearch:8.15.2
+  mongodb_projetDE:
+    image: mongo:latest
+    container_name: mongodb_projetDE
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - webscraping_network  
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.3
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ports:
       - "9200:9200"
-  kibana:
-    image: kibana:8.15.2
-    container_name: kibana
-    environment:
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+
+  dashboard_app:
+    build: .
+    container_name: dashboard_app
+    depends_on:
+      - mongodb_projetDE
+      - elasticsearch
     ports:
-      - "5601:5601"
+      - "8050:8050"
+    environment:
+      - MONGO_URI=mongodb://mongodb_projetDE:27017/projetDE
+      - ELASTICSEARCH_HOST=http://elasticsearch:9200
+    networks:
+      - webscraping_network
+
+
+networks:
+  webscraping_network:
+    driver: bridge
+
+volumes:
+  mongo_data:
+
+
+
+  
+
+
+

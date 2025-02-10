@@ -109,7 +109,9 @@ REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 # MONGO_COLLECTION_NAME = os.environ.get("MONGO_COLLECTION_NAME")
 
 # MONGO_URI = "mongodb://172.24.80.1:27017/"
-MONGO_URI = "mongodb://localhost:27017/"
+MONGO_URI = "mongodb://mongodb_projetDE:27017/"
 MONGO_DATABASE = "projetDE"
 MONGO_COLLECTION = "books"
+ELASTICSEARCH_HOST = "http://elasticsearch:9200"
+
 
