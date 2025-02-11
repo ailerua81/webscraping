@@ -22,49 +22,33 @@ class BookshopPipeline:
 
     COLLECTION_NAME = 'books'
     mongo_host = "localhost"
-    es_host = "http://elasticsearch:9200"  # Adresse du conteneur Elasticsearch
+    # es_host = "http://elasticsearch:9200"  # Adresse du conteneur Elasticsearch
 
-
+    
 
     def __init__(self, mongo_uri, mongo_db):
-        if not isinstance(mongo_uri, str) or not isinstance(mongo_db, str):
-            raise ValueError("Erreur: mongo_uri et mongo_db doivent être des chaînes de caractères !")
-        
-        self.mongo_uri = mongo_uri
-        self.mongo_db = mongo_db
+        self.client = pymongo.MongoClient("mongodb://mongodb_projetDE:27017/")
+        self.db = self.client["projetDE"]
+        self.collection = self.db["books"]
+
+        # Vérification si la base et la collection existent
+        print("Bases de données existantes :", self.client.list_database_names())
+        print("Collections dans webscraping_db :", self.db.list_collection_names())
 
 
-    def create_index_if_not_exists(self):
-        # Crée l'index 'books' dans Elasticsearch s'il n'existe pas."""
-        if not self.es.indices.exists(index="books"):
-            logging.info("Index 'books' non trouvé, création en cours...")
-            self.es.indices.create(index="books", body={
-                "settings": {
-                    "number_of_shards": 1,
-                    "number_of_replicas": 1
-                },
-                "mappings": {
-                    "properties": {
-                        "titre": { "type": "text" },
-                        "auteur": { "type": "text" },
-                        "editeur": { "type": "text" },
-                        "prix": { "type": "float" }
-                    }
-                }
-            })
-            logging.info("Index 'books' créé avec succès !")
-    
+
 
     @classmethod
     def from_crawler(cls, crawler):
         mongo_uri = crawler.settings.get("MONGO_URI")
         mongo_db = crawler.settings.get("MONGO_DATABASE")
-        es_host = crawler.settings.get("ELASTICSEARCH_HOST", "http://elasticsearch:9200")
+        # es_host = crawler.settings.get("ELASTICSEARCH_HOST", "http://elasticsearch:9200")
 
         if not isinstance(mongo_db, str):
             raise ValueError(f"Erreur: MONGO_DATABASE doit être une chaîne, mais a reçu {type(mongo_db)}")
 
-        return cls(mongo_uri, mongo_db, es_host)
+        # return cls(mongo_uri, mongo_db, es_host)
+        return cls(mongo_uri, mongo_db)
 
 
 
@@ -76,14 +60,14 @@ class BookshopPipeline:
             self.client.server_info()
             logging.info("Connexion MongoDB réussie !")
 
-            # Connexion Elasticsearch
-            self.es = Elasticsearch(self.es_host)
-            if not self.es.ping():
-                raise ValueError("Impossible de se connecter à Elasticsearch")
-            logging.info("Connexion Elasticsearch réussie !")
+            # # Connexion Elasticsearch
+            # self.es = Elasticsearch(self.es_host)
+            # if not self.es.ping():
+            #     raise ValueError("Impossible de se connecter à Elasticsearch")
+            # logging.info("Connexion Elasticsearch réussie !")
 
-            # Vérifier et créer l'index Elasticsearch
-            self.create_index_if_not_exists()
+            # # Vérifier et créer l'index Elasticsearch
+            # self.create_index_if_not_exists()
 
         except Exception as e:
             logging.error(f"Erreur de connexion : {e}")
@@ -109,12 +93,12 @@ class BookshopPipeline:
             self.db[self.COLLECTION_NAME].insert_one(ItemAdapter(item).asdict())
             logging.info(f"✅ Livre ajouté dans MongoDB : {item['titre']}")
 
-            # Indexation Elasticsearch
-            try:
-                self.es.index(index="books", document=ItemAdapter(item).asdict())
-                logging.info(f"Livre indexé dans Elasticsearch : {item['titre']}")
-            except Exception as e:
-                logging.error(f"Erreur lors de l'indexation Elasticsearch : {e}")
+            # # Indexation Elasticsearch
+            # try:
+            #     self.es.index(index="books", document=ItemAdapter(item).asdict())
+            #     logging.info(f"Livre indexé dans Elasticsearch : {item['titre']}")
+            # except Exception as e:
+            #     logging.error(f"Erreur lors de l'indexation Elasticsearch : {e}")
 
             return item
 

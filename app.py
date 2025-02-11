@@ -12,7 +12,7 @@ import time
 
 # Configuration MongoDB et Elasticsearch
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongodb_projetDE:27017/projetDE")
-ES_HOST = os.getenv("ELASTICSEARCH_HOST", "http://elasticsearch:9200")
+# ES_HOST = os.getenv("ELASTICSEARCH_HOST", "http://elasticsearch:9200")
 
 
 # Vérification de MongoDB
@@ -29,64 +29,38 @@ def wait_for_mongo():
             time.sleep(2)
     return False
 
-# Vérification d'Elasticsearch
-def wait_for_elasticsearch():
-    print("Vérification de la connexion à Elasticsearch...")
-    es = Elasticsearch(ES_HOST)
-    for _ in range(10):
-        if es.ping():
-            print("Elasticsearch est accessible !")
-            return True
-        print("Elasticsearch pas encore prêt, attente...")
-        time.sleep(2)
-    return False
-
-# Vérifier MongoDB et Elasticsearch avant de démarrer
-if not wait_for_mongo() or not wait_for_elasticsearch():
-    print("ERREUR : Impossible de se connecter à MongoDB ou Elasticsearch. Vérifiez les services.")
-    exit(1)
-
-
-
-
-# Récupérer la chaîne de connexion depuis les variables d'environnement
-#mongo_uri = os.environ.get('MONGO_URI', 'mongodb://mongodb_projetDE:27017/projetDE')
 
 client = pymongo.MongoClient(MONGO_URI)
 db = client.get_database()  # ou db = client['nom_de_votre_db']
 collection = db["books"]
 
-# Lancer le webscraping avant de démarrer le dashboard
-# print("Lancement du webscraping...")
-# subprocess.run(["python", "./bookshop/bookshop/spiders/bookshop.py"], check=True)
-# print("Webscraping terminé !")
 
 # Connexion à Elasticsearch
 #es_host = os.getenv("ELASTICSEARCH_HOST", "http://elasticsearch:9200")  # Utilise le hostname Docker
 #es = Elasticsearch(es_host)
 
 
-def create_index_if_not_exists():
-    if not es.indices.exists(index="books"):
-        print("Index 'books' non trouvé, création en cours...")
-        es.indices.create(index="books", body={
-            "settings": {
-                "number_of_shards": 1,
-                "number_of_replicas": 1
-            },
-            "mappings": {
-                "properties": {
-                    "titre": { "type": "text" },
-                    "auteur": { "type": "text" },
-                    "editeur": { "type": "text" },
-                    "prix": { "type": "float" }
-                }
-            }
-        })
-        print("Index 'books' créé avec succès !")
+# def create_index_if_not_exists():
+#     if not es.indices.exists(index="books"):
+#         print("Index 'books' non trouvé, création en cours...")
+#         es.indices.create(index="books", body={
+#             "settings": {
+#                 "number_of_shards": 1,
+#                 "number_of_replicas": 1
+#             },
+#             "mappings": {
+#                 "properties": {
+#                     "titre": { "type": "text" },
+#                     "auteur": { "type": "text" },
+#                     "editeur": { "type": "text" },
+#                     "prix": { "type": "float" }
+#                 }
+#             }
+#         })
+#         print("Index 'books' créé avec succès !")
 
 # Vérifie et crée l'index avant d'exécuter des recherches
-create_index_if_not_exists()
+# create_index_if_not_exists()
 
 
 
@@ -95,52 +69,44 @@ dash_app = dash.Dash(__name__, external_stylesheets=[dbc.themes.LUX])
 
 # Récupérer les données de MongoDB
 def fetch_data():
-    def fetch_data():
-        logging.info("📡 Récupération des données depuis MongoDB...")
-        data = list(collection.find({}, {"_id": 0}))
-        logging.info(f"Données récupérées : {data}")
+    logging.info(" Récupération des données depuis MongoDB...")
+    data = list(collection.find({}, {"_id": 0}))
+    logging.info(f"Données récupérées : {data}")
 
-        df = pd.DataFrame(data)
+    db = pd.DataFrame(data)
 
     # Vérifier que la colonne "date_edition" existe
-    if "date_edition" not in df.columns:
-        df["date_edition"] = "Unknown"  # Valeur par défaut si la colonne manque
+    if "date_edition" not in db.columns:
+        db["date_edition"] = "Unknown"  # Valeur par défaut si la colonne manque
     else:
-        df["date_edition"] = df["date_edition"].astype(str)  # Convertir en texte
+        db["date_edition"] = db["date_edition"].astype(str)  # Convertir en texte
 
     
     # Convertir les listes en chaînes de caractères pour éviter les erreurs dans Dash DataTable
-    if "categories" in df.columns:
-        df["categories"] = df["categories"].apply(lambda x: ", ".join(x) if isinstance(x, list) else x)
+    if "categories" in db.columns:
+        db["categories"] = db["categories"].apply(lambda x: ", ".join(x) if isinstance(x, list) else x)
 
-    return df
+    return db
 
 
 
 # Mise en page du Dashboard
 dash_app.layout = dbc.Container([
 
-    html.H1("📚 Dashboard - Lancer le Web Scraping"),
-    
-    dbc.Button("🔄 Lancer le Web Scraping", id="scrape-button", color="primary", className="mb-3"),
-    
-    html.Div(id="scrape-status", children="Cliquez sur le bouton pour lancer le scraping."),
-
-
     dbc.Row([
         dbc.Col(html.H1("📚 Dashboard - L'occasion de lire", className="text-center my-3"), width=12)
     ]),
 
-    html.H4(" 🔍 Recherche : "),
-    dbc.Row([
-        dbc.Col(dcc.Input(id="search-bar", type="text", className="form-control", placeholder="Rechercher un livre..."), width=8),
-        dbc.Col(dbc.Button("🔍 Rechercher", id="search-button", color="#52e6f7", className="w-100"), width=4),
-    ], className="mb-4"),
+    # html.H4(" 🔍 Recherche : "),
+    # dbc.Row([
+    #     dbc.Col(dcc.Input(id="search-bar", type="text", className="form-control", placeholder="Rechercher un livre..."), width=8),
+    #     dbc.Col(dbc.Button("🔍 Rechercher", id="search-button", color="#52e6f7", className="w-100"), width=4),
+    # ], className="mb-4"),
 
-    dbc.Row([
-        dcc.Store(id="search-results"),  # Pour stocker les résultats
-        dbc.Col(html.Div(id="results-display"), width=12)  # Pour afficher les résultats
-    ]),
+    # dbc.Row([
+    #     dcc.Store(id="search-results"),  # Pour stocker les résultats
+    #     dbc.Col(html.Div(id="results-display"), width=12)  # Pour afficher les résultats
+    # ]),
 
     html.H4("📋 Liste des livres"),
 
@@ -159,8 +125,11 @@ dash_app.layout = dbc.Container([
 
 
     dbc.Row([
-        dbc.Col(html.Img(id="book-image", src="", style={"max-width": "300px", "margin-top": "20px"}), width=12, className="text-center")
-    ]),
+        dbc.Col(html.Img(id="book-image", src="", style={"max-width": "300px", "margin-top": "20px"}), width=6),
+        dbc.Col(html.P(id="book-summary", children="Sélectionnez un livre pour voir son résumé.", 
+                    style={"margin-top": "20px", "font-style": "italic"}), width=6)
+    ], className="text-center"),
+
 
 
     html.H4("📊 Visualisation des données"),
@@ -240,98 +209,97 @@ def update_dashboard(n):
 
 
 
-# Callback pour lancer la recherche dans Elasticsearch
+# # Callback pour lancer la recherche dans Elasticsearch
+# @dash_app.callback(
+#     dash.Output("search-results", "data"),
+#     [dash.Input("search-bar", "value"),
+#      dash.Input("search-button", "n_clicks")]
+# )
+# def search_books(query, n_clicks):
+#     # On effectue la recherche seulement si la requête est présente et que le bouton a été cliqué
+#     if not query or not n_clicks:
+#         return []
+
+#     response = es.search(index="books", body={"query": {"match_all": {}}})
+#     print(response)    
+
+    
+#     try:
+#         # Exécuter une recherche (notez que la syntaxe peut varier selon la version de votre client Elasticsearch)
+#         response = es.search(
+#             index="books",
+#             body={
+#                 "query": {
+#                     "multi_match": {
+#                         "query": query,
+#                         "fields": ["titre", "auteur", "editeur"]
+#                     }
+#                 }
+#             }
+#         )
+#     except Exception as e:
+#         print("Erreur lors de la recherche :", e)
+#         return []
+    
+#     # Formater les résultats pour l'affichage
+#     results = [
+#         {
+#             "titre": hit["_source"].get("titre"),
+#             "auteur": hit["_source"].get("auteur"),
+#             "editeur": hit["_source"].get("editeur")
+#         }
+#         for hit in response.get("hits", {}).get("hits", [])
+#     ]
+    
+#     return results
+
+# # Callback pour afficher les résultats sur le dashboard
+# @dash_app.callback(
+#     dash.Output("results-display", "children"),
+#     [dash.Input("search-results", "data")]
+# )
+# def display_results(data):
+#     if not data:
+#         return "Aucun résultat."
+    
+#     # Exemple simple d'affichage sous forme de liste
+#     return html.Ul([
+#         html.Li(f"{result['titre']} par {result['auteur']} (Éditeur: {result['editeur']})")
+#         for result in data
+#     ])
+
+
+
+
 @dash_app.callback(
-    dash.Output("search-results", "data"),
-    [dash.Input("search-bar", "value"),
-     dash.Input("search-button", "n_clicks")]
-)
-def search_books(query, n_clicks):
-    # On effectue la recherche seulement si la requête est présente et que le bouton a été cliqué
-    if not query or not n_clicks:
-        return []
-
-    response = es.search(index="books", body={"query": {"match_all": {}}})
-    print(response)    
-
-    
-    try:
-        # Exécuter une recherche (notez que la syntaxe peut varier selon la version de votre client Elasticsearch)
-        response = es.search(
-            index="books",
-            body={
-                "query": {
-                    "multi_match": {
-                        "query": query,
-                        "fields": ["titre", "auteur", "editeur"]
-                    }
-                }
-            }
-        )
-    except Exception as e:
-        print("Erreur lors de la recherche :", e)
-        return []
-    
-    # Formater les résultats pour l'affichage
-    results = [
-        {
-            "titre": hit["_source"].get("titre"),
-            "auteur": hit["_source"].get("auteur"),
-            "editeur": hit["_source"].get("editeur")
-        }
-        for hit in response.get("hits", {}).get("hits", [])
-    ]
-    
-    return results
-
-# Callback pour afficher les résultats sur le dashboard
-@dash_app.callback(
-    dash.Output("results-display", "children"),
-    [dash.Input("search-results", "data")]
-)
-def display_results(data):
-    if not data:
-        return "Aucun résultat."
-    
-    # Exemple simple d'affichage sous forme de liste
-    return html.Ul([
-        html.Li(f"{result['titre']} par {result['auteur']} (Éditeur: {result['editeur']})")
-        for result in data
-    ])
-
-
-
-# Callback pour afficher la photo du livre lorsqu'une ligne est sélectionnée
-@dash_app.callback(
-    dash.Output("book-image", "src"),
+    [dash.Output("book-image", "src"),
+     dash.Output("book-summary", "children")],
     [dash.Input("data-table", "active_cell")],
-    [dash.State("data-table", "data")]
+    [dash.State("data-table", "data"),
+     dash.State("data-table", "page_current"),
+     dash.State("data-table", "page_size")]
 )
-def display_book_image(active_cell, data):
+def display_book_info(active_cell, data, page_current, page_size):
     if active_cell is None:
-        return ""
-    row = active_cell["row"]
-    return data[row]["photo"] if "photo" in data[row] else ""  
+        return "", "Sélectionnez un livre pour voir son résumé."
 
+    # Définir des valeurs par défaut pour éviter les erreurs
+    page_current = page_current if page_current is not None else 0
+    page_size = page_size if page_size is not None else 10
 
+    # Calculer l'index absolu du livre sélectionné
+    relative_row = active_cell["row"]
+    absolute_row = page_current * page_size + relative_row
 
-# Callback pour exécuter Scrapy depuis le Dashboard
-@dash_app.callback(
-    Output("scrape-status", "children"),
-    Input("scrape-button", "n_clicks"),
-    prevent_initial_call=True
-)
-def run_scrapy(n):
-    try:
-        result = subprocess.run(["scrapy", "crawl", "bookshop"], cwd="bookshop", capture_output=True, text=True)
-        
-        if result.returncode == 0:
-            return "Scraping terminé avec succès !"
-        else:
-            return f"Erreur lors du scraping : {result.stderr}"
-    
-    except Exception as e:
-        return f"Erreur : {str(e)}"
+    if absolute_row >= len(data):  # Vérifier que l'index est valide
+        return "", "Sélectionnez un livre pour voir son résumé."
+
+    # Récupérer la photo et le résumé du livre
+    book_photo = data[absolute_row].get("photo", "")
+    book_summary = data[absolute_row].get("resume", "Résumé non disponible.")
+
+    return book_photo, book_summary
+
 
 if __name__ == "__main__":
     dash_app.run_server(debug=True, host="0.0.0.0", port=8050)  

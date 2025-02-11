@@ -23,7 +23,7 @@ class BookshopSpider(scrapy.Spider):
 
     def __init__(self):
         url = 'https://www.loccasiondelire.fr/?p='
-        for page in range(1,2): # 507 pages - 12662 résultats
+        for page in range(1,5): # 507 pages - 12662 résultats
             self.start_urls.append(url + str(page))
 
 

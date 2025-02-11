@@ -1,0 +1,9 @@
+scrapy
+scrapy-user-agents
+user-agents
+pymongo
+elasticsearch
+plotly
+pandas
+dash-table
+
